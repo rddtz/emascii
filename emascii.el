@@ -35,6 +35,14 @@
   :group 'wp
   :prefix "emascii-")
 
+(defcustom emascii-start-in-overwrite t
+  "When non-nil, canvases start in overwrite mode.
+In overwrite mode typing replaces the cell under the cursor and
+backspace leaves a blank.  In insert mode typing pushes the rest of
+the line right and backspace pulls it left.  Toggle with
+`emascii-toggle-overwrite'."
+  :type 'boolean)
+
 (defcustom emascii-big-step 8
   "Cells moved by shifted arrows while a piece is floating."
   :type 'integer)
@@ -84,6 +92,8 @@ keep the drawing aligned."
 (defvar-local emascii--last-row nil)
 (defvar-local emascii--float nil
   "Current floating piece, an `emascii--fl' struct, or nil.")
+(defvar-local emascii-overwrite t
+  "Non-nil when typing overwrites cells instead of pushing text.")
 (defvar-local emascii--override nil
   "Non-nil in `emascii-mode' buffers; enables `emascii-override-map'.")
 
@@ -534,7 +544,8 @@ rows and columns removed from the top and the left."
     (emascii--move-to (1+ (car c)) (or emascii--type-col (cdr c)))))
 
 (defun emascii-self-insert (n)
-  "Overwrite N cells with the typed character."
+  "Type the character N times, overwriting or pushing text.
+See `emascii-overwrite'."
   (interactive "p")
   (when (emascii--selection-p) (emascii-clear-selection))
   (unless (memq last-command '(emascii-self-insert emascii-newline
@@ -545,27 +556,61 @@ rows and columns removed from the top and the left."
     (when (characterp ch)
       (dotimes (_ n)
         (let ((c (emascii--cell)))
-          (emascii--put (car c) (cdr c) ch))))))
+          (if emascii-overwrite
+              (emascii--put (car c) (cdr c) ch)
+            (emascii--goto-cell (car c) (cdr c))
+            (let ((deactivate-mark nil))
+              (emascii--merge-pad-undo)
+              (insert ch))))))))
 
 (defun emascii-delete-backward (n)
-  "Blank the selection, or the N cells left of the cursor."
+  "Delete the selection, or N cells left of the cursor.
+In overwrite mode the cells become blank; in insert mode the rest of
+the line is pulled left."
   (interactive "p")
-  (if (emascii--selection-p)
-      (emascii-clear)
-    (dotimes (_ n)
+  (cond
+   ((emascii--selection-p) (emascii-clear))
+   ((not emascii-overwrite) (emascii-delete-backward-shift n))
+   (t (emascii--blank-backward n))))
+
+(defun emascii--blank-backward (n)
+  (dotimes (_ n)
       (let ((c (emascii--cell)))
         (when (> (cdr c) 0)
           (emascii--put (car c) (1- (cdr c)) ?\s)
-          (emascii--goto-cell (car c) (1- (cdr c))))))))
+          (emascii--goto-cell (car c) (1- (cdr c)))))))
+
+(defun emascii--blank-forward (n)
+  (let ((c (emascii--cell)))
+    (save-excursion
+      (dotimes (i n) (emascii--put (car c) (+ (cdr c) i) ?\s)))))
 
 (defun emascii-delete-forward (n)
-  "Blank the selection, or N cells starting at the cursor."
+  "Delete the selection, or N cells at the cursor.
+In overwrite mode the cells become blank; in insert mode the rest of
+the line is pulled left."
   (interactive "p")
-  (if (emascii--selection-p)
-      (emascii-clear)
-    (let ((c (emascii--cell)))
-      (save-excursion
-        (dotimes (i n) (emascii--put (car c) (+ (cdr c) i) ?\s))))))
+  (cond
+   ((emascii--selection-p) (emascii-clear))
+   ((not emascii-overwrite) (emascii-delete-forward-shift n))
+   (t (emascii--blank-forward n))))
+
+(defun emascii-delete-backward-other (n)
+  "Delete N cells left of the cursor the way the other typing mode does."
+  (interactive "p")
+  (if emascii-overwrite (emascii-delete-backward-shift n) (emascii--blank-backward n)))
+
+(defun emascii-delete-forward-other (n)
+  "Delete N cells at the cursor the way the other typing mode does."
+  (interactive "p")
+  (if emascii-overwrite (emascii-delete-forward-shift n) (emascii--blank-forward n)))
+
+(defun emascii-toggle-overwrite ()
+  "Toggle between overwrite and insert typing."
+  (interactive)
+  (setq emascii-overwrite (not emascii-overwrite))
+  (force-mode-line-update)
+  (message "Typing: %s" (if emascii-overwrite "overwrite" "insert (pushes text)")))
 
 (defun emascii-delete-backward-shift (n)
   "Delete N characters left of the cursor and pull the rest of the line left."
@@ -993,10 +1038,13 @@ GROUP is an already active change group to extend."
     (define-key m [remap delete-char] #'emascii-delete-forward)
     (define-key m (kbd "DEL") #'emascii-delete-backward)
     (define-key m (kbd "<deletechar>") #'emascii-delete-forward)
-    (define-key m (kbd "S-DEL") #'emascii-delete-backward-shift)
-    (define-key m (kbd "S-<backspace>") #'emascii-delete-backward-shift)
-    (define-key m (kbd "S-<delete>") #'emascii-delete-forward-shift)
-    (define-key m (kbd "S-<deletechar>") #'emascii-delete-forward-shift)
+    (define-key m (kbd "S-DEL") #'emascii-delete-backward-other)
+    (define-key m (kbd "S-<backspace>") #'emascii-delete-backward-other)
+    (define-key m (kbd "S-<delete>") #'emascii-delete-forward-other)
+    (define-key m (kbd "S-<deletechar>") #'emascii-delete-forward-other)
+    (define-key m (kbd "<insert>") #'emascii-toggle-overwrite)
+    (define-key m (kbd "<insertchar>") #'emascii-toggle-overwrite)
+    (define-key m [remap overwrite-mode] #'emascii-toggle-overwrite)
     (define-key m (kbd "RET") #'emascii-newline)
     (define-key m (kbd "TAB") #'emascii-tab)
     (define-key m (kbd "C-c C-c") #'emascii-copy)
@@ -1071,7 +1119,8 @@ GROUP is an already active change group to extend."
 
 (defun emascii--mode-line ()
   (let ((c (emascii--cell)))
-    (format " [%s%s] %d:%d"
+    (format " [%s %s%s] %d:%d"
+            (if emascii-overwrite "OVR" "INS")
             emascii-shape
             (if emascii--float " floating" "")
             (car c) (cdr c))))
@@ -1093,6 +1142,7 @@ GROUP is an already active change group to extend."
   (setq-local mode-line-process '(:eval (emascii--mode-line)))
   (setq emascii--cells (make-hash-table :test #'equal)
         emascii--override t
+        emascii-overwrite emascii-start-in-overwrite
         emascii--last-row nil)
   (when (fboundp 'electric-indent-local-mode) (electric-indent-local-mode -1))
   (auto-fill-mode -1)

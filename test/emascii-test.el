@@ -100,9 +100,35 @@
 (ert-deftest emascii-shift-delete-keys-bound ()
   (with-temp-buffer
     (emascii-mode)
-    (should (eq (key-binding (kbd "S-DEL")) 'emascii-delete-backward-shift))
-    (should (eq (key-binding (kbd "S-<backspace>")) 'emascii-delete-backward-shift))
-    (should (eq (key-binding (kbd "S-<deletechar>")) 'emascii-delete-forward-shift))))
+    (should (eq (key-binding (kbd "S-DEL")) 'emascii-delete-backward-other))
+    (should (eq (key-binding (kbd "S-<backspace>")) 'emascii-delete-backward-other))
+    (should (eq (key-binding (kbd "S-<deletechar>")) 'emascii-delete-forward-other))
+    (should (eq (key-binding (kbd "<insert>")) 'emascii-toggle-overwrite))))
+
+(ert-deftest emascii-starts-in-overwrite ()
+  (emascii-test-with-canvas "abc"
+    (should emascii-overwrite)
+    (emascii-test-keys "X")
+    (should (equal (buffer-string) "Xbc"))))
+
+(ert-deftest emascii-insert-mode-pushes ()
+  (emascii-test-with-canvas "ab|cd"
+    (emascii-test-keys "<insert> <right> <right> X Y")
+    (should-not emascii-overwrite)
+    (should (equal (buffer-string) "abXY|cd"))
+    (emascii-test-keys "DEL")
+    (should (equal (buffer-string) "abX|cd"))
+    (emascii-test-keys "S-DEL")
+    (should (equal (buffer-string) "ab |cd"))
+    (emascii-test-keys "<insert> Z")
+    (should emascii-overwrite)
+    (should (equal (buffer-string) "abZ|cd"))))
+
+(ert-deftest emascii-insert-mode-past-line-end ()
+  (emascii-test-with-canvas "ab"
+    (emascii-toggle-overwrite)
+    (emascii-test-keys "<down> <right> <right> <right> Q")
+    (should (equal (buffer-string) "ab\n   Q"))))
 
 (ert-deftest emascii-moving-away-trims-padding ()
   (emascii-test-with-canvas "ab\ncd"

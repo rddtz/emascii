@@ -22,10 +22,11 @@ qualquer arquivo `.txt`.
 | Tecla | Ação |
 |---|---|
 | setas, `C-f` `C-b` `C-n` `C-p` | anda livremente; cria espaços e linhas quando precisa |
-| digitar | sobrescreve a célula, nunca empurra o texto |
+| digitar | sobrescreve a célula (modo `OVR`) ou empurra o resto da linha (modo `INS`) |
+| `<insert>` | alterna entre sobrescrever (`OVR`, padrão) e inserir (`INS`); o modo atual aparece na mode-line |
 | `RET` | desce uma linha, na coluna onde você começou a digitar |
-| `DEL` / `C-d` | apaga (vira espaço) sem mover o resto |
-| `S-DEL` / `S-<delete>` | apaga e puxa o resto da linha uma casa para a esquerda, como num editor normal |
+| `DEL` / `C-d` | em `OVR`, apaga sem mover o resto; em `INS`, puxa o resto da linha para a esquerda |
+| `S-DEL` / `S-<delete>` | apaga do jeito do outro modo |
 | `C-k` | apaga até o fim da linha, sem juntar linhas |
 | `TAB` | anda até a próxima parada de tab |
 | clique | põe o cursor em qualquer célula, mesmo depois do fim da linha |
@@ -122,7 +123,8 @@ make test EMACS=/Applications/Emacs.app/Contents/MacOS/Emacs
   o corte) em vez de reduzi-lo, porque arte ASCII reduzida fica ilegível.
 - A transparência considera só o espaço. Não existe "espaço opaco"
   salvo dentro de uma peça; a tecla `t` deixa a peça inteira opaca.
-- `RET` não quebra a linha: só desce o cursor.
+- `RET` não quebra a linha, nem no modo `INS`: só desce o cursor.
+- Para começar em `INS`, use `(setq emascii-start-in-overwrite nil)`.
 - O clipboard rico usa `osascript` e só existe no macOS. Em outros sistemas
   vai só o texto puro.
 - Sem ferramentas de desenho (caixas, linhas, setas), como combinado.
