@@ -189,6 +189,25 @@
     (emascii-test-select-rect '(1 . 1) '(2 . 2))
     (should (equal (emascii--selection-lines) '(1 1 ("ab" "cd"))))))
 
+(ert-deftest emascii-selection-keys ()
+  (emascii-test-with-canvas "abcd\nefgh\nijkl"
+    (emascii-test-keys "C-SPC <right> <down> e")
+    (should (eq emascii-shape 'ellipse))
+    (should emascii--selecting)
+    (emascii-test-keys "r")
+    (should (eq emascii-shape 'rectangle))
+    (should (equal (emascii--selection-lines) '(0 0 ("ab" "ef"))))
+    (emascii-test-keys "m <right> <right> RET")
+    (should-not emascii--float)
+    (should (equal (buffer-string) "  ab\n  ef\nijkl"))
+    (emascii-test-keys "x")
+    (should (equal (buffer-string) "  xb\n  ef\nijkl"))))
+
+(ert-deftest emascii-letters-type-without-selection ()
+  (emascii-test-with-canvas ""
+    (emascii-test-keys "r e l m s")
+    (should (equal (buffer-string) "relms"))))
+
 (ert-deftest emascii-toggled-cells ()
   (emascii-test-with-canvas "abc\ndef"
     (emascii--goto-cell 0 0) (emascii-toggle-cell)

@@ -39,12 +39,18 @@ qualquer arquivo `.txt`.
 | `S-arrastar` | adiciona outra forma à seleção |
 | `C-clique` ou `M-clique` | marca/desmarca uma célula |
 | `S-setas` | seleciona com a forma atual pelo teclado |
-| `C-SPC` | começa uma forma no cursor; de novo, fixa a forma e permite começar outra |
+| `C-SPC` | começa a seleção no cursor; as setas aumentam; `C-SPC` de novo fixa a forma e permite começar outra |
+| `r` / `e` / `l` (com seleção ativa) | forma: retângulo, elipse, laço |
+| `m` (com seleção ativa) | levanta a seleção para mover |
+| `s` (com seleção ativa) | salva a seleção na galeria |
 | `C-c C-t` | marca/desmarca a célula do cursor |
 | `C-c C-o` | troca a forma: retângulo, elipse, laço (contorno livre) |
 | `C-g` | limpa a seleção |
 
 No laço, o contorno é o caminho que o cursor ou o mouse percorreu.
+
+Com seleção ativa, as letras `r` `e` `l` `m` `s` viram comandos; as
+outras letras limpam a seleção e digitam normalmente.
 
 ### Recortar, copiar, mover, colar
 

@@ -94,6 +94,8 @@ keep the drawing aligned."
   "Current floating piece, an `emascii--fl' struct, or nil.")
 (defvar-local emascii-overwrite t
   "Non-nil when typing overwrites cells instead of pushing text.")
+(defvar-local emascii--selecting nil
+  "Non-nil while a selection exists; enables `emascii-selection-map'.")
 (defvar-local emascii--override nil
   "Non-nil in `emascii-mode' buffers; enables `emascii-override-map'.")
 
@@ -465,6 +467,7 @@ rows and columns removed from the top and the left."
 (defun emascii--refresh ()
   "Redraw selection or floating piece highlights."
   (emascii--clear-overlays)
+  (setq emascii--selecting (and (not emascii--float) (emascii--selection-p)))
   (cond
    (emascii--float
     (emascii--render (mapcar #'car (emascii--fl-saved emascii--float))
@@ -742,8 +745,36 @@ Return non-nil if the mouse moved to another cell."
         (let ((emascii--internal-mark t)) (set-mark (point)))
         (message "Shape added; C-SPC starts another one"))
     (emascii--start-shape (emascii--cell))
-    (message "Shape %s started; move to resize" emascii-shape))
+    (emascii--selection-help))
   (emascii--refresh))
+
+(defun emascii--selection-help ()
+  (message "Selecting (%s): arrows resize, r/e/l shape, m move, s save, M-w copy, C-w cut, DEL clear, C-g cancel"
+           emascii-shape))
+
+(defun emascii-set-shape (shape)
+  "Use SHAPE (`rectangle', `ellipse' or `lasso') for selection."
+  (setq emascii-shape shape)
+  (when (and emascii--shape-p (region-active-p) (eq shape 'lasso))
+    (setq emascii--path (list (emascii--mark-cell))))
+  (force-mode-line-update)
+  (emascii--refresh)
+  (emascii--selection-help))
+
+(defun emascii-shape-rectangle ()
+  "Select with a rectangle."
+  (interactive)
+  (emascii-set-shape 'rectangle))
+
+(defun emascii-shape-ellipse ()
+  "Select with an ellipse."
+  (interactive)
+  (emascii-set-shape 'ellipse))
+
+(defun emascii-shape-lasso ()
+  "Select with a free-hand lasso."
+  (interactive)
+  (emascii-set-shape 'lasso))
 
 (defun emascii-cycle-shape ()
   "Cycle the selection shape between rectangle, ellipse and lasso."
@@ -1110,8 +1141,19 @@ GROUP is an already active change group to extend."
     m)
   "Keymap active while a piece is floating.")
 
+(defvar emascii-selection-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "r") #'emascii-shape-rectangle)
+    (define-key m (kbd "e") #'emascii-shape-ellipse)
+    (define-key m (kbd "l") #'emascii-shape-lasso)
+    (define-key m (kbd "m") #'emascii-move)
+    (define-key m (kbd "s") #'emascii-gallery-save)
+    m)
+  "Keymap active while a selection exists.")
+
 (defvar emascii--emulation-alist
   `((emascii--float . ,emascii-float-map)
+    (emascii--selecting . ,emascii-selection-map)
     (emascii--override . ,emascii-override-map)))
 
 ;; Order 100 puts these maps before cua-mode (order 400).
