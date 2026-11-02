@@ -208,6 +208,12 @@
     (emascii-test-keys "r e l m s")
     (should (equal (buffer-string) "relms"))))
 
+(ert-deftest emascii-selection-face-visible ()
+  (emascii-test-with-canvas "abc"
+    (should-not (face-attribute 'emascii-selection :inherit nil 'default))
+    (should-not (eq (face-attribute 'emascii-selection :background nil t)
+                    'unspecified))))
+
 (ert-deftest emascii-toggled-cells ()
   (emascii-test-with-canvas "abc\ndef"
     (emascii--goto-cell 0 0) (emascii-toggle-cell)

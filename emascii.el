@@ -62,8 +62,10 @@ keep the drawing aligned."
   :type 'integer)
 
 (defface emascii-selection
-  '((t :inherit region))
-  "Face for selected cells.")
+  '((((background dark)) :background "#2f5d8a" :foreground "#ffffff")
+    (t :background "#a8d1ff" :foreground "#000000"))
+  "Face for selected cells.
+It must not inherit `region': emascii hides that face in canvases.")
 
 (defface emascii-float
   '((((background dark)) :background "#5a4a00" :foreground "#ffe680")
