@@ -567,6 +567,24 @@ rows and columns removed from the top and the left."
       (save-excursion
         (dotimes (i n) (emascii--put (car c) (+ (cdr c) i) ?\s))))))
 
+(defun emascii-delete-backward-shift (n)
+  "Delete N characters left of the cursor and pull the rest of the line left."
+  (interactive "p")
+  (let ((deactivate-mark nil)
+        (k (min n (- (point) (line-beginning-position)))))
+    (when (> k 0)
+      (emascii--merge-pad-undo)
+      (delete-char (- k)))))
+
+(defun emascii-delete-forward-shift (n)
+  "Delete N characters at the cursor and pull the rest of the line left."
+  (interactive "p")
+  (let ((deactivate-mark nil)
+        (k (min n (- (line-end-position) (point)))))
+    (when (> k 0)
+      (emascii--merge-pad-undo)
+      (delete-char k))))
+
 (defun emascii-kill-line ()
   "Blank from the cursor to the end of the line, without joining lines."
   (interactive)
@@ -975,6 +993,10 @@ GROUP is an already active change group to extend."
     (define-key m [remap delete-char] #'emascii-delete-forward)
     (define-key m (kbd "DEL") #'emascii-delete-backward)
     (define-key m (kbd "<deletechar>") #'emascii-delete-forward)
+    (define-key m (kbd "S-DEL") #'emascii-delete-backward-shift)
+    (define-key m (kbd "S-<backspace>") #'emascii-delete-backward-shift)
+    (define-key m (kbd "S-<delete>") #'emascii-delete-forward-shift)
+    (define-key m (kbd "S-<deletechar>") #'emascii-delete-forward-shift)
     (define-key m (kbd "RET") #'emascii-newline)
     (define-key m (kbd "TAB") #'emascii-tab)
     (define-key m (kbd "C-c C-c") #'emascii-copy)

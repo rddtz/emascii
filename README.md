@@ -25,6 +25,7 @@ qualquer arquivo `.txt`.
 | digitar | sobrescreve a célula, nunca empurra o texto |
 | `RET` | desce uma linha, na coluna onde você começou a digitar |
 | `DEL` / `C-d` | apaga (vira espaço) sem mover o resto |
+| `S-DEL` / `S-<delete>` | apaga e puxa o resto da linha uma casa para a esquerda, como num editor normal |
 | `C-k` | apaga até o fim da linha, sem juntar linhas |
 | `TAB` | anda até a próxima parada de tab |
 | clique | põe o cursor em qualquer célula, mesmo depois do fim da linha |

@@ -79,6 +79,31 @@
     (emascii-test-keys "<right> <right> <right> DEL")
     (should (equal (buffer-string) "ab d"))))
 
+(ert-deftest emascii-shift-backspace-pulls-line ()
+  (emascii-test-with-canvas "a--b\ncd"
+    (emascii-test-keys "<right> <right> <right>")
+    (emascii-delete-backward-shift 1)
+    (should (equal (buffer-string) "a-b\ncd"))
+    (emascii--goto-cell 0 0)
+    (emascii-delete-backward-shift 1)
+    (should (equal (buffer-string) "a-b\ncd"))))
+
+(ert-deftest emascii-shift-delete-pulls-line ()
+  (emascii-test-with-canvas "a--b"
+    (emascii--goto-cell 0 1)
+    (emascii-delete-forward-shift 1)
+    (should (equal (buffer-string) "a-b"))
+    (emascii--goto-cell 0 3)
+    (emascii-delete-forward-shift 1)
+    (should (equal (buffer-string) "a-b"))))
+
+(ert-deftest emascii-shift-delete-keys-bound ()
+  (with-temp-buffer
+    (emascii-mode)
+    (should (eq (key-binding (kbd "S-DEL")) 'emascii-delete-backward-shift))
+    (should (eq (key-binding (kbd "S-<backspace>")) 'emascii-delete-backward-shift))
+    (should (eq (key-binding (kbd "S-<deletechar>")) 'emascii-delete-forward-shift))))
+
 (ert-deftest emascii-moving-away-trims-padding ()
   (emascii-test-with-canvas "ab\ncd"
     (emascii-test-keys "<right> <right> <right> <right> <right> <down>")
